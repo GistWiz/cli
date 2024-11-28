@@ -1,0 +1,19 @@
+{
+  "name": "gistwiz",
+  "version": "1.0.0",
+  "type": "module",
+  "module": "index.ts",
+  "bin": {
+    "gistwiz": "./src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "scripts": {
+    "gistwiz": "bun run src/cli.ts"
+  }
+}
