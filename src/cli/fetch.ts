@@ -1,4 +1,4 @@
-import { Octokit } from "octokit"
+import { Octokit } from "@octokit/rest"
 import { throttling } from "@octokit/plugin-throttling"
 import { retry } from "@octokit/plugin-retry"
 import { totalCountPlugin } from "../lib/gistwiz-octokit-total-count-plugin.ts"

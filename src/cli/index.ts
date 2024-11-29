@@ -1,4 +1,4 @@
-import { Octokit } from "octokit"
+import { Octokit } from "@octokit/rest"
 import { exec } from "child_process"
 import path from "path"
 import fs from "fs"

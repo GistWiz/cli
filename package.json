@@ -1,8 +1,8 @@
 {
   "name": "gistwiz",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "module": "index.ts",
+  "module": "./src/cli.ts",
   "bin": {
     "gistwiz": "./src/cli.ts"
   },
@@ -11,7 +11,11 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "ioredis": "latest",
+    "@octokit/rest": "latest",
+    "@octokit/plugin-throttling": "latest",
+    "@octokit/plugin-retry": "latest"
   },
   "scripts": {
     "gistwiz": "bun run src/cli.ts"
