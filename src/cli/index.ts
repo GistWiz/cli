@@ -36,7 +36,8 @@ export async function indexRedisData(token: string): Promise<void> {
   }
 
   // Execute the command
-  const command = `cat ${redisFile} | docker exec -i ${REDIS_CONTAINER} redis-cli`
+  // const command = `cat ${redisFile} | docker exec -i ${REDIS_CONTAINER} redis-cli`
+  const command = `cat ${redisFile} | redis-cli`
 
   exec(command, (error, stdout, stderr) => {
     if (error) {
