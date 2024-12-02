@@ -61,6 +61,9 @@ export async function startServer(port: number) {
       const url = new URL(req.url, `http://${req.headers.host}`)
       const username = url.pathname.split('/qs/')[1]
       const searchQuery = url.searchParams.get('query')
+      const token = req.headers['authorization']?.split(/\s+/).pop()
+
+      console.debug('Authenticated as:', token)
 
       if (!username) {
         res.writeHead(400, { 'Content-Type': 'application/json' })
