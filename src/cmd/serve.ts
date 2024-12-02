@@ -2,6 +2,12 @@ import { createServer } from 'http'
 import { URL } from 'url'
 import Redis from 'ioredis'
 
+import { Octokit } from "@octokit/rest"
+import { throttling } from "@octokit/plugin-throttling"
+import { retry } from "@octokit/plugin-retry"
+const GistWizOctoKit = Octokit.plugin(throttling, retry)
+
+
 // Initialize the Redis client
 const redis = new Redis() // Defaults to localhost:6379
 
@@ -57,10 +63,34 @@ export async function startServer(port: number) {
       return
     }
 
-    if (req.method === 'GET' && req.url?.startsWith('/qs/')) {
+
+
+    // if (req.method === 'GET' && req.url?.startsWith('/qs/')) {
+    if (req.method === 'GET' && req.url && (req.path?.split('/').filter(String).shift() === 'qs')) {
       const url = new URL(req.url, `http://${req.headers.host}`)
-      const username = url.pathname.split('/qs/')[1]
+      // const username = url.pathname.split('/qs/')[1]
       const searchQuery = url.searchParams.get('query')
+
+      const version = '1.0.0'
+      const token = req.headers?.authorization?.split(/\s+/).pop()
+
+      const octokit = new GistWizOctoKit({
+        auth: token,
+        userAgent: `gistwiz fetch v${version}`,
+        throttle: {
+          onRateLimit: (retryAfter) => {
+            console.error(`Rate limit exceeded. Retrying in ${retryAfter}s`)
+            return true
+          },
+          onSecondaryRateLimit: (retryAfter) => {
+            console.error(`Secondary rate limit hit. Retrying in ${retryAfter}s`)
+            return true
+          },
+        },
+        retry: { retries: 3 },
+      })
+
+      const username = await (await octokit.rest.users.getAuthenticated()).data.login
 
       if (!username) {
         res.writeHead(400, { 'Content-Type': 'application/json' })
