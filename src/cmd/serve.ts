@@ -92,10 +92,18 @@ export async function startServer(port: number) {
         console.debug('Final formatted results:', formattedResults)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(formattedResults))
-      } catch (error) {
+      } catch (error: any) {
+        // missing index
+        if (error.name === 'ReplyError' && error.message.includes('no such index')) {
+          console.warn(`Index for username "${username}" does not exist.`)
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          return res.end(JSON.stringify([]))
+        }
+
+        // all other errors
         console.error('Error querying Redis:', error)
         res.writeHead(500, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'Internal Server Error' }))
+        return res.end(JSON.stringify([]))
       }
     } else {
       res.writeHead(404, { 'Content-Type': 'application/json' })
