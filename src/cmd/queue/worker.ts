@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq'
-import { fetchGists } from '../../cmd/fetch'
+import { fetchGists } from '../fetch'
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379'
 const QUEUE_NAME = 'fetch-gists-for-user-token'
