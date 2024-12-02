@@ -2,8 +2,6 @@ import { createServer } from 'http'
 import { URL } from 'url'
 import Redis from 'ioredis'
 
-const PORT = process.env.PORT || 3721
-
 // Initialize the Redis client
 const redis = new Redis() // Defaults to localhost:6379
 
@@ -52,7 +50,7 @@ const handleCors = (req: any, res: any): boolean => {
 }
 
 // Create the HTTP server
-export async function startServer() {
+export async function startServer(port: number) {
   const server = createServer(async (req, res) => {
     // Handle CORS preflight requests
     if (handleCors(req, res)) {
@@ -105,7 +103,7 @@ export async function startServer() {
     }
   })
 
-  server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`)
+  server.listen(port, () => {
+    console.log(`Server is running on port ${port}`)
   })
 }
