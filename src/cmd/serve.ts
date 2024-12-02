@@ -61,8 +61,7 @@ export async function startServer(port: number) {
       return
     }
 
-    // if (req.method === 'GET' && req.url?.startsWith('/qs/')) {
-    if (req.method === 'GET' && req.url?.endsWith('/qs')) {
+    if (req.method === 'GET' && req.url?.startsWith('/qs')) {
       const url = new URL(req.url, `http://${req.headers.host}`)
       // const username = url.pathname.split('/qs/')[1]
       const searchQuery = url.searchParams.get('query')
