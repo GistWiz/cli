@@ -23,11 +23,7 @@ export async function queue(token: string): Promise<void> {
         name: `fetch-gists-for-user-token-${token}`,
         data: { token },
         opts: {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 10000,
-          },
+          removeOnComplete: true,
           removeOnFail: 1000,
         }
       }
