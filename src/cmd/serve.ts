@@ -91,6 +91,7 @@ export async function startServer(port: number) {
       })
 
       const username = await (await octokit.rest.users.getAuthenticated()).data.login
+      console.log("Authenticated as:", username)
 
       if (!username) {
         res.writeHead(400, { 'Content-Type': 'application/json' })
