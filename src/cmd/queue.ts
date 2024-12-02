@@ -13,14 +13,27 @@ export async function queue(token: string): Promise<void> {
 
   try {
     queue = new Queue(QUEUE_NAME, { connection: { url: REDIS_URL } })
-    // const job = await queue.add('fetchGistsJob', { token })
 
-    const job = await queue.upsertJobScheduler('fetch-gists-repeat-every-3m', { every: 180000 }, {
-      name: 'fetch-gists-for-wilmoore',
-      data: { token }
-    })
+    const job = await queue.upsertJobScheduler('fetch-gists-repeat-every-3m',
+      {
+        every: 180000,
+        immediately: true,
+      },
+      {
+        name: `fetch-gists-for-user-token-${token}`,
+        data: { token },
+        opts: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 10000,
+          },
+          removeOnFail: 1000,
+        }
+      }
+    )
 
-    console.log('Scheduled recurring job:', job.id)
+    console.log(`recurring job scheduled successfully for ${token} with ID: ${job.id}`)
     process.exit(0)
   } catch (error: any) {
     console.error(`Error adding job to the queue: ${error.message}`)
