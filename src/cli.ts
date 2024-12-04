@@ -18,7 +18,7 @@ program
   .version("1.0.0")
 
 program
-  .command("fetch")
+  .command("gists")
   .description("Fetch Authenticated Gists via the GitHub API")
   .requiredOption("--token <token>", "GitHub API Personal Access Token")
   .action(async (options) => await gists({ token: options.token }))

@@ -1,14 +1,8 @@
-import fs from "fs"
-import path from "path"
-import { Octokit } from "@octokit/rest"
-import { throttling } from "@octokit/plugin-throttling"
-import { retry } from "@octokit/plugin-retry"
-import { totalCountPlugin } from "../lib/gistwiz-octokit-total-count-plugin.ts"
-import { version } from "../../package.json"
+import fs from 'fs'
+import path from 'path'
+import { GistWizOctokit } from '../lib/gistwiz-octokit'
 
-const LOG_DIR = "/var/log/gistwiz"
-
-const GistWizOctoKit = Octokit.plugin(throttling, retry, totalCountPlugin)
+const LOG_DIR = '/var/log/gistwiz'
 
 export async function gists({
   token,
@@ -21,30 +15,11 @@ export async function gists({
 }): Promise<void> {
   const LOG_PROGRESS_THRESHOLD = 750
 
-  if (!token) {
-    console.error("Error: A token must be provided either via --token or the GIST_API_TOKEN environment variable.")
-    process.exit(1)
-  }
-
-  const octokit = new GistWizOctoKit({
-    auth: token,
-    userAgent: `gistwiz fetch v${version}`,
-    throttle: {
-      onRateLimit: (retryAfter) => {
-        console.error(`Rate limit exceeded. Retrying in ${retryAfter}s`)
-        return true
-      },
-      onSecondaryRateLimit: (retryAfter) => {
-        console.error(`Secondary rate limit hit. Retrying in ${retryAfter}s`)
-        return true
-      },
-    },
-    retry: { retries: 3 },
-  })
+  const octokit = GistWizOctokit(token)
 
   const startTime = Date.now()
 
-  const username = await (await octokit.rest.users.getAuthenticated()).data.login
+  const username = await octokit.username()
   const JSONL_FILE = path.join(LOG_DIR, `${username}.jsonl`)
   const REDISEARCH_FILE = path.join(LOG_DIR, `${username}.redis`)
   const USER_RUN_FILE = path.join(LOG_DIR, `${username}.json`)
@@ -68,7 +43,7 @@ export async function gists({
 
   let totalGists;
   try {
-    totalGists = await octokit.totalCount("GET /gists", {})
+    totalGists = await octokit.count()
     console.log(`Total gists available: ${totalGists}`)
   } catch (error: any) {
     console.error(`Error calculating total gists: ${error.message}`)
