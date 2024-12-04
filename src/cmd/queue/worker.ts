@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq'
-import { fetchGists } from '../gists'
+import { gists } from '../gists'
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379'
 const QUEUE_NAME = 'fetch-gists-for-user-token'
@@ -14,7 +14,7 @@ export async function worker(): Promise<void> {
 
         console.log(`Processing job ID: ${job.id}`)
         console.log(`Fetching gists using token: ${token}`)
-        await fetchGists({ token })
+        await gists({ token })
         console.log(`Job ID ${job.id} completed successfully.`)
       } catch (error: any) {
         console.error(`Error processing job ID ${job.id}: ${error.message}`)

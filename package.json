@@ -14,9 +14,11 @@
     "@octokit/plugin-retry": "latest",
     "@octokit/plugin-throttling": "latest",
     "@octokit/rest": "latest",
+    "@types/ms": "^0.7.34",
     "bullmq": "latest",
     "commander": "latest",
-    "ioredis": "latest"
+    "ioredis": "latest",
+    "ms": "^2.1.3"
   },
   "scripts": {
     "gistwiz": "bun run src/cli.ts"
