@@ -10,7 +10,7 @@ const LOG_DIR = "/var/log/gistwiz"
 
 const GistWizOctoKit = Octokit.plugin(throttling, retry, totalCountPlugin)
 
-export async function fetchGists({
+export async function gists({
   token,
   jsonl = true,
   redisearch = true,

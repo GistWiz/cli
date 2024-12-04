@@ -1,66 +1,29 @@
 import { createServer } from 'http'
 import { URL } from 'url'
-import Redis from 'ioredis'
 
-import { Octokit } from "@octokit/rest"
-import { retry } from "@octokit/plugin-retry"
+import Redis from 'ioredis'
+import { Octokit } from '@octokit/rest'
+import { retry } from '@octokit/plugin-retry'
+
+import { format } from '../lib/redis'
+
 const GistWizOctoKit = Octokit.plugin(retry)
 
-// Initialize the Redis client
-const redis = new Redis() // Defaults to localhost:6379
+const redis = new Redis()
 
-// Helper function to generate the URL from the result id
-const generateUrl = (id: string): string => {
-  return id.split(':').filter((_, idx) => idx > 0).reverse().concat('https://gist.github.com').reverse().join('/')
-}
-
-function toEntries(keyValueArray: string[], transform: (value: any) => any = (value) => value) {
-  return Object.fromEntries(
-    keyValueArray.reduce((acc: [string, any][], curr, idx, arr) => {
-      if (idx % 2 === 0) {
-        acc.push([curr, transform(arr[idx + 1])])
-      }
-      return acc
-    }, [])
-  )
-}
-
-const format = (redisResponse: any): any[] => {
-  console.debug('Raw Redis Response:', redisResponse)
-
-  const formatted = toEntries(redisResponse.slice(1), toEntries)
-
-  return Object.entries(formatted).map(([key, value]: [string, any]) => ({
-    key,
-    description: value.description,
-    id: value.gist_id,
-    url: generateUrl(key),
-  }))
-}
-
-// CORS handler function
-const handleCors = (req: any, res: any): boolean => {
+const corsPreflightRequestHandler = (req: any, res: any): boolean => {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204)
-    res.end()
-    return true
-  }
-
-  return false
+  if (req.method !== 'OPTIONS') false
+  res.writeHead(204)
+  res.end()
+  return true
 }
 
-// Create the HTTP server
-export async function startServer(port: number) {
+export async function serve(port: number) {
   const server = createServer(async (req, res) => {
-    // Handle CORS preflight requests
-    if (handleCors(req, res)) {
-      return
-    }
-
+    if (corsPreflightRequestHandler(req, res)) { return }
     if (req.method === 'GET' && req.url?.startsWith('/qs')) {
       const url = new URL(req.url, `http://${req.headers.host}`)
       const searchQuery = url.searchParams.get('query')
@@ -87,7 +50,8 @@ export async function startServer(port: number) {
         const redisQuery = `(@description:${searchQuery})`
         console.debug(`Executing Redis query: FT.SEARCH ${username} '${redisQuery}' RETURN 2 gist_id description`)
 
-        const redisResponse = await redis.call(
+        // execute redis query
+        const response = await redis.call(
           'FT.SEARCH',
           username,
           redisQuery,
@@ -96,20 +60,19 @@ export async function startServer(port: number) {
           'gist_id',
           'description'
         )
-        const formattedResults = format(redisResponse)
+        const formattedResults = format(response)
 
         console.debug('Final formatted results:', formattedResults)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(formattedResults))
       } catch (error: any) {
-        // missing index
+        // missing index error
         if (error.name === 'ReplyError' && error.message.includes('no such index')) {
           console.warn(`Index for username "${username}" does not exist.`)
           res.writeHead(200, { 'Content-Type': 'application/json' })
           return res.end(JSON.stringify([]))
         }
 
-        // all other errors
         console.error('Error querying Redis:', error)
         res.writeHead(500, { 'Content-Type': 'application/json' })
         return res.end(JSON.stringify([]))

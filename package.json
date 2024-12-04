@@ -1,6 +1,6 @@
 {
   "name": "gistwiz",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "type": "module",
   "module": "./src/cli.ts",
   "bin": {
@@ -8,14 +8,14 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "typescript": "^5.0.0"
+    "typescript": "latest"
   },
   "dependencies": {
     "@octokit/plugin-retry": "latest",
     "@octokit/plugin-throttling": "latest",
     "@octokit/rest": "latest",
-    "bullmq": "^5.30.1",
-    "commander": "^12.1.0",
+    "bullmq": "latest",
+    "commander": "latest",
     "ioredis": "latest"
   },
   "scripts": {

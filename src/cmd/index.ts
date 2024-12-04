@@ -6,7 +6,7 @@ import fs from "fs"
 const LOG_DIR = "/var/log/gistwiz"
 const REDIS_CONTAINER = "redis-stack-server" // The name of your Redis container
 
-export async function indexRedisData(token: string): Promise<void> {
+export async function index(token: string): Promise<void> {
   if (!token) {
     console.error("Error: A token must be provided either via --token or the GIST_API_TOKEN environment variable.")
     process.exit(1)

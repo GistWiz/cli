@@ -23,7 +23,7 @@ const format = (redisResponse: any): any[] => {
   }))
 }
 
-export async function queryRedis(username: string, searchQuery: string): Promise<void> {
+export async function query(username: string, searchQuery: string): Promise<void> {
   if (!username || !searchQuery) {
     console.error("Error: Both username and search query are required.")
     process.exit(1)
