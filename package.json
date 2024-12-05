@@ -1,6 +1,6 @@
 {
   "name": "gistwiz",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "module": "./src/cli.ts",
   "bin": {
@@ -22,6 +22,7 @@
   },
   "scripts": {
     "gistwiz": "bun run src/cli.ts",
+    "monitor": "./src/bin/redis-file-monitor.sh",
     "pro": "./src/bin/pro.sh"
   }
 }

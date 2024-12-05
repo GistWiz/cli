@@ -6,14 +6,13 @@ export $(grep -v '^#' .env | xargs)
 # Get the subcommand (default to 'provision' if none provided)
 SUBCOMMAND=${1:-provision}
 
-# Define your commands
+# Sub-Commands
 case $SUBCOMMAND in
   provision)
-    echo "Running provision..."
+    echo "provision..."
     ssh root@${PROVISION_IP} -i $IDENTITY_FILE '$SHELL' < ${PROVISION_FILE}
     ;;
   ssh)
-    echo "Starting SSH session..."
     ssh root@${PROVISION_IP} -t -i ${IDENTITY_FILE}
     ;;
   *)
