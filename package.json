@@ -1,6 +1,6 @@
 {
   "name": "gistwiz",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "module": "./src/cli.ts",
   "bin": {
@@ -14,15 +14,15 @@
     "@octokit/plugin-retry": "latest",
     "@octokit/plugin-throttling": "latest",
     "@octokit/rest": "latest",
-    "@types/ms": "^0.7.34",
+    "@types/ms": "latest",
     "bullmq": "latest",
     "commander": "latest",
     "ioredis": "latest",
-    "ms": "^2.1.3"
+    "ms": "latest"
   },
   "scripts": {
     "gistwiz": "bun run src/cli.ts",
     "provision:quicksearch:droplet:centos": "export $(grep -v '^#' .env | xargs) && ssh root@${PROVISION_IP} -i $IDENTITY_FILE '$SHELL' < .provision/quicksearch/droplet/centos.pro",
-    "ssh": "export $(grep -v '^#' .env | xargs) && ssh root@${PROVISION_IP} -ti ${IDENTITY_FILE}"
+    "ssh": "export $(grep -v '^#' .env | xargs) && ssh root@${PROVISION_IP} -t -i ${IDENTITY_FILE}"
   }
 }
