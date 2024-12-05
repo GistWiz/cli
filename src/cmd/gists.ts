@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { GistWizOctokit } from '../lib/gistwiz-octokit'
+import { GistWizOctokit } from '../lib/gistwiz/octokit'
 
 const LOG_DIR = '/var/log/gistwiz'
 

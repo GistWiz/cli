@@ -1,7 +1,7 @@
 import { Octokit } from "@octokit/rest"
 import { retry } from "@octokit/plugin-retry"
 import { throttling } from "@octokit/plugin-throttling"
-import { version } from '../../package.json'
+import { version } from '@package'
 
 interface OctokitExtended extends Octokit {
   count: () => Promise<number>;
