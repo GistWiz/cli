@@ -22,8 +22,6 @@
   },
   "scripts": {
     "gistwiz": "bun run src/cli.ts",
-    "pro": "./src/bin/pro.sh",
-    "provision": "export $(grep -v '^#' .env | xargs) && ssh root@${PROVISION_IP} -i $IDENTITY_FILE '$SHELL' < .provision/quicksearch/droplet/centos.pro",
-    "ssh": "export $(grep -v '^#' .env | xargs) && ssh root@${PROVISION_IP} -t -i ${IDENTITY_FILE}"
+    "pro": "./src/bin/pro.sh"
   }
 }

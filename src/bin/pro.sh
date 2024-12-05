@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Load environment variables from .env
 export $(grep -v '^#' .env | xargs)
@@ -10,7 +10,7 @@ SUBCOMMAND=${1:-provision}
 case $SUBCOMMAND in
   provision)
     echo "Running provision..."
-    ssh root@${PROVISION_IP} -i $IDENTITY_FILE '$SHELL' < .provision/quicksearch/droplet/centos.pro
+    ssh root@${PROVISION_IP} -i $IDENTITY_FILE '$SHELL' < ${PROVISION_FILE}
     ;;
   ssh)
     echo "Starting SSH session..."
