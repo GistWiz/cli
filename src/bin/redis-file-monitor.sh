@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 
-# Default configurations
 WATCH_DIR="${WATCH_DIR:-/var/log/gistwiz}"
 DEFAULT_LOG_DIR="/tmp"
 DEFAULT_LOG_FILE="${DEFAULT_LOG_DIR}/redis-file-monitor.log"
 LOG_FILE="${LOG_FILE:-/var/log/redis-file-monitor.log}"
 DRY_RUN=false
+RUNNING=true
 
 # Add Redis CLI to PATH
 export PATH="/opt/redis-stack/bin:$PATH"
+
+# Gracefully handle termination signals
+trap 'echo "$(date): Redis file monitor stopped. Exiting..."; RUNNING=false; exit 0' SIGINT SIGTERM
 
 # Parse CLI arguments
 for arg in "$@"; do
@@ -105,6 +108,7 @@ if [[ "$REQUIRED_TOOL" == "inotifywait" ]]; then
         echo "$(date): Failed to process ${file}" | tee -a "$LOG_FILE"
       fi
     fi
+    [[ $RUNNING == false ]] && break
   done
 elif [[ "$REQUIRED_TOOL" == "fswatch" ]]; then
   fswatch -0 "${WATCH_DIR}" | while read -d "" file; do
@@ -120,5 +124,6 @@ elif [[ "$REQUIRED_TOOL" == "fswatch" ]]; then
         echo "$(date): Failed to process ${file}" | tee -a "$LOG_FILE"
       fi
     fi
+    [[ $RUNNING == false ]] && break
   done
 fi

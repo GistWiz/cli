@@ -9,7 +9,7 @@ SUBCOMMAND=${1:-provision}
 # Sub-Commands
 case $SUBCOMMAND in
   provision)
-    echo "provision..."
+    echo "provisioning..."
     ssh root@${PROVISION_IP} -i $IDENTITY_FILE '$SHELL' < ${PROVISION_FILE}
     ;;
   ssh)
