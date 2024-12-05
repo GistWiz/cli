@@ -21,6 +21,8 @@
     "ms": "^2.1.3"
   },
   "scripts": {
-    "gistwiz": "bun run src/cli.ts"
+    "gistwiz": "bun run src/cli.ts",
+    "provision:quicksearch:droplet:centos": "export $(grep -v '^#' .env | xargs) && ssh root@${PROVISION_IP} -i $IDENTITY_FILE '$SHELL' < .provision/quicksearch/droplet/centos.pro",
+    "ssh": "export $(grep -v '^#' .env | xargs) && ssh root@${PROVISION_IP} -ti ${IDENTITY_FILE}"
   }
 }
