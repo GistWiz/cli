@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Load environment variables from .env
 export $(grep -v '^#' .env | xargs)

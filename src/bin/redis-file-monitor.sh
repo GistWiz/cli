@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 WATCH_DIR="${WATCH_DIR:-/var/log/gistwiz}"
 DEFAULT_LOG_DIR="/tmp"
