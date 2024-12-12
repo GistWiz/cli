@@ -4,15 +4,7 @@ import { GistWizOctokit } from '../lib/octokit/plugin/gistwiz-octokit'
 
 const LOG_DIR = '/var/log/gistwiz'
 
-export async function gists({
-  token,
-  jsonl = true,
-  redisearch = true,
-}: {
-  token: string;
-  jsonl?: boolean;
-  redisearch?: boolean;
-}): Promise<void> {
+export async function gists({ token }: { token: string }): Promise<void> {
   const LOG_PROGRESS_THRESHOLD = 750
 
   const octokit = GistWizOctokit(token)

@@ -3,7 +3,6 @@
 import { Command } from 'commander'
 
 import { gists } from './cmd/gists'
-import { index } from './cmd/index'
 import { query } from './cmd/query'
 import { queue } from './cmd/queue'
 import { serve } from './cmd/serve'
@@ -19,31 +18,28 @@ program
   .command("gists")
   .description("Fetch Authenticated Gists via the GitHub API")
   .requiredOption("--token <token>", "GitHub API Personal Access Token")
-  .action(async (options) => await gists({ token: options.token }))
-
-program
-  .command("queue")
-  .description("Queue a fetch job")
-  .requiredOption("--token <token>", "GitHub API Personal Access Token")
+  .option('-q, --queue [queue]', 'Whether to queue the gists job (default: false)', false)
   .action(async (options) => {
     try {
-      await queue(options.token);
+      await options.queue === true
+        ? queue({ token: options.token })
+        : gists({ token: options.token })
     } catch (error: any) {
-      console.error(`Error queuing job: ${error.message}`);
-      process.exit(1);
+      console.error(`Error: ${error.message}`)
+      process.exit(1)
     }
-  });
+  })
 
 program
   .command('serve')
   .description('Start the autocomplete server')
   .option('--port <port>', 'Port to run the server on (default: 3721)', '3721')
   .action(async (options) => {
-    const port = Number(options.port);
+    const port = Number(options.port)
 
     if (isNaN(port) || port <= 0) {
-      console.error('Invalid port number. Please provide a valid positive number for the port.');
-      process.exit(1);
+      console.error('Invalid port number. Please provide a valid positive number for the port.')
+      process.exit(1)
     }
 
     try {
