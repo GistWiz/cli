@@ -204,6 +204,7 @@ install_bun() {
 }
 
 setup_gistwiz_server() {
+  echo "Setting up Gistwiz..."
   mkdir -p /var/log/gistwiz
 
   echo "Cloning GistWiz repository..."
@@ -267,20 +268,12 @@ cleanup_redis_file_monitor
 cleanup_gistwiz
 cleanup_bun
 
-echo "Installing dependencies..."
+echo "Application Setup..."
 install_dependencies
-
-echo "Setting up Redis Stack..."
 install_redis_stack
-
-echo "Installing Bun..."
 install_bun
-
-echo "Setting up Gistwiz..."
 setup_gistwiz_server
 setup_gistwiz_worker
-
-echo "Setting up Redis File Monitor..."
 setup_redis_file_monitor
 
 echo "Provisioning completed successfully."
