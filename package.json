@@ -24,5 +24,8 @@
     "gistwiz": "bun run src/cli.ts",
     "monitor": "./src/bin/redis-file-monitor.sh",
     "pro": "./src/bin/pro.sh"
-  }
+  },
+  "trustedDependencies": [
+    "core-js"
+  ]
 }

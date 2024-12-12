@@ -38,8 +38,8 @@ const GistWizOctokitPlugin = (octokit: OctokitExtended) => {
     try {
       return (await octokit.rest.users.getAuthenticated()).data.login
     } catch (error: any) {
-      octokit.log.error(`Failed to get username: ${error.message}`)
-      throw error
+      octokit.log.warn(`Failed to get username: ${error.message}`)
+      return ""
     }
   }
 }

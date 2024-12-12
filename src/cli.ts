@@ -4,14 +4,12 @@ import { Command } from 'commander'
 
 import { gists } from './cmd/gists'
 import { index } from './cmd/index'
-import { queue } from './cmd/queue'
 import { query } from './cmd/query'
+import { queue } from './cmd/queue'
 import { serve } from './cmd/serve'
-
-import { worker } from './cmd/queue/worker'
+import { worker } from './cmd/start'
 
 const program = new Command()
-
 program
   .name("gistwiz")
   .description("GistWiz is a command-line interface (CLI) for fetching, indexing and searching authenticated GitHub Gists.")
@@ -29,27 +27,12 @@ program
   .requiredOption("--token <token>", "GitHub API Personal Access Token")
   .action(async (options) => {
     try {
-      await queue(options.token || process.env.GIST_API_TOKEN);
+      await queue(options.token);
     } catch (error: any) {
       console.error(`Error queuing job: ${error.message}`);
       process.exit(1);
     }
   });
-
-program
-  .command("index")
-  .description("Index Redisearch data from logs using a GitHub token")
-  .requiredOption("--token <token>", "GitHub API Personal Access Token")
-  .action(async (options) => {
-    const token = options.token || process.env.GIST_API_TOKEN
-
-    try {
-      await index(token)
-    } catch (error: any) {
-      console.error(`Unexpected error: ${error.message}`)
-      process.exit(1)
-    }
-  })
 
 program
   .command('serve')

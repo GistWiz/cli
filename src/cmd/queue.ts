@@ -1,34 +1,21 @@
 import { Queue } from 'bullmq'
-import { Octokit } from '@octokit/rest';
 import ms from 'ms'
+import { GistWizOctokit } from '../lib/octokit/plugin/gistwiz-octokit'
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379'
 const QUEUE_NAME = 'fetch-gists-for-authenticated-user'
 
 const PLAN = {
-  '10m': { interval: ms('10m'), attempts: 9 },
-  '30m': { interval: ms('30m'), attempts: 14 },
-  '60m': { interval: ms('60m'), attempts: 16 },
-}
-
-const getUsername = async (token: string): Promise<string> => {
-  const octokit = new Octokit({ auth: token })
-
-  try {
-    return (await octokit.rest.users.getAuthenticated()).data.login
-  } catch (error: any) {
-    console.error('Error fetching username from GitHub:', error.message);
-    throw new Error('Failed to fetch username');
-  }
+  '10m': { interval: ms('10m'), attempts: 3 },
+  '30m': { interval: ms('30m'), attempts: 7 },
+  '60m': { interval: ms('60m'), attempts: 7 },
 }
 
 export async function queue(token: string): Promise<void> {
-  if (!token) {
-    console.error("Error: token is required.")
-    process.exit(1)
-  }
+  console.log(`Queueing job for ${token}`)
 
-  const username = await getUsername(token);
+  const octokit = GistWizOctokit(token)
+  const username = await octokit.username()
 
   if (!username) {
     console.error('Error: username could not be retrieved.');

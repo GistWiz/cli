@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { GistWizOctokit } from '../lib/gistwiz/octokit'
+import { GistWizOctokit } from '../lib/octokit/plugin/gistwiz-octokit'
 
 const LOG_DIR = '/var/log/gistwiz'
 
@@ -20,6 +20,11 @@ export async function gists({
   const startTime = Date.now()
 
   const username = await octokit.username()
+  if (!username) {
+    console.error('Error: username could not be retrieved.')
+    process.exit(1)
+  }
+
   const JSONL_FILE = path.join(LOG_DIR, `${username}.jsonl`)
   const REDISEARCH_FILE = path.join(LOG_DIR, `${username}.redis`)
   const USER_RUN_FILE = path.join(LOG_DIR, `${username}.json`)
