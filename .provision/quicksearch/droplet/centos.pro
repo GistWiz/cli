@@ -203,6 +203,13 @@ install_bun() {
   echo 'export PATH="$HOME/.bun/bin:$PATH"' >>~/.bashrc
 }
 
+setup_gistwiz_environment() {
+  echo "Setting up Gistwiz Environment Variables..."
+  cat >/etc/profile.d/sh.local <<EOF
+QUEUE_NAME_GISTS=gists
+EOF
+}
+
 setup_gistwiz_server() {
   echo "Setting up Gistwiz..."
   mkdir -p /var/log/gistwiz
@@ -272,6 +279,7 @@ echo "Application Setup..."
 install_dependencies
 install_redis_stack
 install_bun
+setup_gistwiz_environment
 setup_gistwiz_server
 setup_gistwiz_worker
 setup_redis_file_monitor
