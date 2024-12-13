@@ -5,12 +5,7 @@
   become: true
 
   vars:
-    repo_url: "https://github.com/gistwiz/cli.git"
-    branch: "main"
-    redis_stack_url: "https://packages.redis.io/redis-stack/redis-stack-server-7.4.0-v1.rhel9.x86_64.tar.gz"
-    redis_install_dir: "/opt/redis-stack"
-    gistwiz_install_dir: "/opt/gistwiz"
-    bun_path: "$HOME/.bun/bin"
+    repo_url: "https://github.com/GistWiz/cli.git"
 
   tasks:
     - name: Ensure required packages are installed
@@ -19,192 +14,89 @@
           - git
           - curl
           - unzip
-          - vim
-          - gcc
-          - make
-          - autoconf
-          - automake
         state: present
-
-    - name: Download and install Redis Stack
-      block:
-        - name: Download Redis Stack
-          ansible.builtin.get_url:
-            url: "{{ redis_stack_url }}"
-            dest: /usr/local/src/redis-stack-server.tar.gz
-
-        - name: Extract Redis Stack
-          ansible.builtin.unarchive:
-            src: /usr/local/src/redis-stack-server.tar.gz
-            dest: /usr/local/src
-            remote_src: yes
-
-        - name: Move Redis Stack to installation directory
-          ansible.builtin.command:
-            cmd: "mv /usr/local/src/redis-stack-server-7.4.0-v1 {{ redis_install_dir }}"
-            creates: "{{ redis_install_dir }}"
-
-        - name: Create Redis systemd service
-          ansible.builtin.copy:
-            dest: /etc/systemd/system/redis-stack.service
-            content: |
-              [Unit]
-              Description=Redis Stack Server
-              After=network.target
-
-              [Service]
-              ExecStart={{ redis_install_dir }}/bin/redis-stack-server {{ redis_install_dir }}/etc/redis.conf
-              WorkingDirectory={{ redis_install_dir }}
-              User=root
-              Group=root
-              Restart=always
-
-              [Install]
-              WantedBy=multi-user.target
-
-        - name: Create Redis configuration directory
-          ansible.builtin.file:
-            path: "{{ redis_install_dir }}/etc"
-            state: directory
-
-        - name: Create Redis configuration file
-          ansible.builtin.copy:
-            dest: "{{ redis_install_dir }}/etc/redis.conf"
-            content: |
-              save 900 1
-              rdbcompression yes
-              appendonly yes
-              appendfsync always
-              dir /var/lib/redis
-              bind 127.0.0.1
-              daemonize yes
-
-        - name: Reload and start Redis Stack service
-          ansible.builtin.systemd:
-            name: redis-stack.service
-            enabled: true
-            state: restarted
 
     - name: Install Bun JavaScript runtime
       ansible.builtin.shell: |
         curl -fsSL https://bun.sh/install | bash
-        export PATH="{{ bun_path }}:$PATH"
+        echo 'export PATH="$HOME/.bun/bin:$PATH"' >> /root/.bashrc
+        source /root/.bashrc
+        which bun
+        bun --version
+      args:
+        executable: /bin/bash
+      register: bun_install_output
+      changed_when: "'bun was installed successfully' in bun_install_output.stdout"
+
+    - name: Verify Bun installation
+      ansible.builtin.shell: |
+        source /root/.bashrc
+        which bun && bun --version
+      args:
+        executable: /bin/bash
+      register: bun_verify_output
+      failed_when: "'command not found' in bun_verify_output.stderr"
+
+    - name: Clone the application repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: /opt/gistwiz
+        version: "{{ branch | default('main') }}"
+        force: yes
+
+    - name: Install application dependencies using Bun
+      ansible.builtin.shell: |
+        source /root/.bashrc
+        cd /opt/gistwiz
+        bun install
       args:
         executable: /bin/bash
 
-    - name: Setup GistWiz application
-      block:
-        - name: Clone GistWiz repository
-          ansible.builtin.git:
-            repo: "{{ repo_url }}"
-            dest: "{{ gistwiz_install_dir }}"
-            version: "{{ branch }}"
-            force: yes
+    - name: Create a systemd service for the application
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/gistwiz.service
+        content: |
+          [Unit]
+          Description=GistWiz Server
+          After=network.target
 
-        - name: Install GistWiz dependencies
-          ansible.builtin.shell: |
-            export PATH="{{ bun_path }}:$PATH"
-            cd {{ gistwiz_install_dir }}
-            bun install
-          args:
-            executable: /bin/bash
+          [Service]
+          ExecStart=/bin/bash -c '/root/.bun/bin/bun run src/cli.ts serve'
+          WorkingDirectory=/opt/gistwiz
+          Restart=always
+          User=root
+          Environment="PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-        - name: Create GistWiz application service
-          ansible.builtin.copy:
-            dest: /etc/systemd/system/gistwiz.service
-            content: |
-              [Unit]
-              Description=GistWiz Server
-              After=network.target
+          [Install]
+          WantedBy=multi-user.target
 
-              [Service]
-              ExecStart=/bin/bash -c '{{ bun_path }}/bun run src/cli.ts serve'
-              WorkingDirectory={{ gistwiz_install_dir }}
-              Restart=always
-              User=root
-              Environment=PATH={{ bun_path }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    - name: Create a systemd service for the GistWiz worker
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/gistwiz-worker.service
+        content: |
+          [Unit]
+          Description=GistWiz Worker
+          After=network.target
 
-              [Install]
-              WantedBy=multi-user.target
+          [Service]
+          ExecStart=/bin/bash -c '/root/.bun/bin/bun run src/cli.ts worker'
+          WorkingDirectory=/opt/gistwiz
+          Restart=always
+          User=root
+          Environment="PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-        - name: Create GistWiz worker service
-          ansible.builtin.copy:
-            dest: /etc/systemd/system/gistwiz-worker.service
-            content: |
-              [Unit]
-              Description=GistWiz Worker
-              After=network.target
+          [Install]
+          WantedBy=multi-user.target
 
-              [Service]
-              ExecStart=/bin/bash -c '{{ bun_path }}/bun run src/cli.ts worker'
-              WorkingDirectory={{ gistwiz_install_dir }}
-              Restart=always
-              User=root
-              Environment=PATH={{ bun_path }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    - name: Reload systemd and start services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop:
+        - gistwiz.service
+        - gistwiz-worker.service
 
-              [Install]
-              WantedBy=multi-user.target
-
-        - name: Reload and start GistWiz services
-          ansible.builtin.systemd:
-            name: "{{ item }}"
-            enabled: true
-            state: started
-          loop:
-            - gistwiz.service
-            - gistwiz-worker.service
-
-    - name: Setup GistWiz File Monitor
-      block:
-        - name: Create GistWiz monitor script
-          ansible.builtin.copy:
-            dest: /usr/local/bin/gistwiz-monitor.sh
-            mode: '0755'
-            content: |
-              #!/usr/bin/env bash
-
-              WATCH_DIR="/var/log/gistwiz"
-              LOG_FILE="/var/log/gistwiz-monitor.log"
-
-              export PATH=/opt/redis-stack/bin:$PATH
-
-              echo "$(date): Starting GistWiz file monitor in ${WATCH_DIR}..." | tee -a "$LOG_FILE"
-
-              inotifywait -m -e close_write --format '%w%f' "${WATCH_DIR}" | while read -r file; do
-                if [[ "${file}" == *.redis ]]; then
-                  echo "$(date): Detected .redis file: ${file}" | tee -a "$LOG_FILE"
-                  while lsof "${file}" >/dev/null 2>&1; do
-                    sleep 1
-                  done
-                  echo "$(date): Processing file: ${file}" | tee -a "$LOG_FILE"
-                  if cat "${file}" | redis-cli; then
-                    echo "$(date): Successfully processed ${file}" | tee -a "$LOG_FILE"
-                  else
-                    echo "$(date): Failed to process ${file}" | tee -a "$LOG_FILE"
-                  fi
-                fi
-              done
-
-        - name: Create GistWiz monitor service
-          ansible.builtin.copy:
-            dest: /etc/systemd/system/gistwiz-monitor.service
-            content: |
-              [Unit]
-              Description=GistWiz Monitor Service
-              After=network.target
-
-              [Service]
-              ExecStart=/usr/local/bin/gistwiz-monitor.sh
-              Restart=always
-              User=root
-              WorkingDirectory=/var/log/gistwiz
-              Environment="PATH=/opt/redis-stack/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-              [Install]
-              WantedBy=multi-user.target
-
-        - name: Reload and start GistWiz monitor service
-          ansible.builtin.systemd:
-            name: gistwiz-monitor.service
-            enabled: true
-            state: started
+    - name: Tag provision completion
+      debug:
+        msg: "Provisioning complete. GistWiz services are up and running with Bun configured!"
