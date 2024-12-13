@@ -38,6 +38,8 @@ Subcommands:
 
 Examples:
   $0 digitalocean --repo GistWiz/cli --name QuickSearch --tags custom-tag1,custom-tag2
+  $0 digitalocean list
+  $0 digitalocean ssh
 EOF
 }
 
@@ -97,12 +99,47 @@ process_tags() {
   echo "$combined_tags"
 }
 
+# DigitalOcean list logic
+digitalocean_list() {
+  echo "Listing DigitalOcean droplets with 'pro' tag..."
+  doctl compute droplet list --tag-name pro --format ID,Name,PublicIPv4,Memory,Region,Tags
+}
+
+# DigitalOcean SSH logic
+digitalocean_ssh() {
+  echo "Fetching droplets with 'pro' tag for SSH..."
+  local droplets
+  droplets=$(doctl compute droplet list --tag-name pro --format ID,Name,PublicIPv4,Memory,Region,Tags --no-header)
+
+  if [ -z "$droplets" ]; then
+    echo "No droplets with the 'pro' tag found."
+    exit 1
+  fi
+
+  local selected
+  selected=$(echo "$droplets" | fzf --height=10 --reverse --prompt="Select a droplet: ")
+
+  if [ -z "$selected" ]; then
+    echo "No droplet selected."
+    exit 1
+  fi
+
+  local public_ipv4
+  public_ipv4=$(echo "$selected" | awk '{print $3}')
+
+  echo "Connecting to $public_ipv4 via SSH..."
+  ssh -t -i "$DEFAULT_PRIVATE_KEY" root@"$public_ipv4"
+}
+
 # DigitalOcean provider logic
 pro_digitalocean() {
   local REPO=""
   local TAGS=""
+  local COMMAND=""
   while [ "$#" -gt 0 ]; do
     case $1 in
+      list) COMMAND="list"; shift ;;
+      ssh) COMMAND="ssh"; shift ;;
       -r|--repo) REPO="$2"; shift ;;
       -b|--branch) BRANCH="$2"; shift ;;
       -p|--playbook-path) PLAYBOOK_PATH="$2"; shift ;;
@@ -116,6 +153,16 @@ pro_digitalocean() {
     esac
     shift
   done
+
+  if [ "$COMMAND" = "list" ]; then
+    digitalocean_list
+    return
+  fi
+
+  if [ "$COMMAND" = "ssh" ]; then
+    digitalocean_ssh
+    return
+  fi
 
   REPO_URL=$(validate_and_get_repo_url "$REPO")
 
@@ -132,7 +179,6 @@ pro_digitalocean() {
     exit 1
   fi
 
-  # Process all tags, adding "digitalocean" for this provider
   ALL_TAGS=$(process_tags "digitalocean" "$TAGS")
 
   echo "Generating Cloud Init script for DigitalOcean..."
