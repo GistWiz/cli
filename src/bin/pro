@@ -7,7 +7,7 @@
 #   ./pro [subcommand] [options]
 #
 # Subcommands:
-#   digitalocean  Provision a DigitalOcean droplet (default)
+#   digitalocean  Manage DigitalOcean droplets (default)
 #   aws           Provision an AWS EC2 instance (future)
 #   azure         Provision an Azure VM (future)
 #
@@ -32,14 +32,19 @@ Usage:
   $0 [subcommand] [options]
 
 Subcommands:
-  digitalocean  Provision a DigitalOcean droplet (default)
+  digitalocean  Manage DigitalOcean droplets
+    - create    Create a new droplet
+    - list      List existing droplets
+    - ssh       SSH into a droplet
+    - destroy   Destroy a droplet
   aws           Provision an AWS EC2 instance (future)
   azure         Provision an Azure VM (future)
 
 Examples:
-  $0 digitalocean --repo GistWiz/cli --name QuickSearch --tags custom-tag1,custom-tag2
+  $0 digitalocean create --repo GistWiz/cli --name QuickSearch --tags custom-tag1,custom-tag2
   $0 digitalocean list
   $0 digitalocean ssh
+  $0 digitalocean destroy
 EOF
 }
 
@@ -87,7 +92,6 @@ process_tags() {
   local provider_tag="$1"
   local cli_tags="$2"
 
-  # Combine default tags with provider-specific and CLI-provided tags
   local combined_tags="$DEFAULT_TAGS"
   if [ -n "$provider_tag" ]; then
     combined_tags="$combined_tags,$provider_tag"
@@ -131,37 +135,42 @@ digitalocean_ssh() {
   ssh -t -i "$DEFAULT_PRIVATE_KEY" root@"$public_ipv4"
 }
 
-# DigitalOcean provider logic
-pro_digitalocean() {
-  local REPO=""
-  local TAGS=""
-  local COMMAND=""
-  while [ "$#" -gt 0 ]; do
-    case $1 in
-      list) COMMAND="list"; shift ;;
-      ssh) COMMAND="ssh"; shift ;;
-      -r|--repo) REPO="$2"; shift ;;
-      -b|--branch) BRANCH="$2"; shift ;;
-      -p|--playbook-path) PLAYBOOK_PATH="$2"; shift ;;
-      -n|--name) DROPLET_NAME="$2"; shift ;;
-      -R|--region) REGION="$2"; shift ;;
-      -s|--size) SIZE="$2"; shift ;;
-      -k|--private-key) PRIVATE_KEY="$2"; shift ;;
-      --tags) TAGS="$2"; shift ;;
-      -h|--help) usage; exit 0 ;;
-      *) echo "Unknown option: $1"; usage; exit 1 ;;
-    esac
-    shift
-  done
+# DigitalOcean Destroy logic
+digitalocean_destroy() {
+  echo "Fetching droplets with 'pro' tag for destruction..."
+  local droplets
+  droplets=$(doctl compute droplet list --tag-name pro --format ID,Name,PublicIPv4,Memory,Region,Tags --no-header)
 
-  if [ "$COMMAND" = "list" ]; then
-    digitalocean_list
-    return
+  if [ -z "$droplets" ]; then
+    echo "No droplets with the 'pro' tag found."
+    exit 1
   fi
 
-  if [ "$COMMAND" = "ssh" ]; then
-    digitalocean_ssh
-    return
+  local selected
+  selected=$(echo "$droplets" | fzf --height=10 --reverse --prompt="Select a droplet to destroy: ")
+
+  if [ -z "$selected" ]; then
+    echo "No droplet selected."
+    exit 1
+  fi
+
+  local droplet_id
+  droplet_id=$(echo "$selected" | awk '{print $1}')
+
+  echo "Destroying droplet with ID $droplet_id..."
+  doctl compute droplet delete "$droplet_id" --force
+
+  echo "Droplet $droplet_id destroyed successfully."
+}
+
+# DigitalOcean Create logic (default)
+digitalocean_create() {
+  local REPO="$1"
+  local TAGS="$2"
+
+  if [ -z "$REPO" ]; then
+    echo "Error: --repo is required for the create command."
+    exit 1
   fi
 
   REPO_URL=$(validate_and_get_repo_url "$REPO")
@@ -185,21 +194,29 @@ pro_digitalocean() {
   cloud_init=$(generate_cloud_init "$REPO_URL" "$BRANCH" "$PLAYBOOK_PATH")
 
   echo "Creating DigitalOcean droplet '$DROPLET_NAME' in region '$REGION' with tags: $ALL_TAGS..."
-  create_output=$(doctl compute droplet create "$DROPLET_NAME" \
+  doctl compute droplet create "$DROPLET_NAME" \
     --region "$REGION" \
     --image "$DROPLET_IMAGE" \
     --size "$SIZE" \
     --ssh-keys $(doctl compute ssh-key list --format ID --no-header | tr '\n' ',') \
     --user-data "$cloud_init" \
-    --tag-names "$ALL_TAGS" 2>&1)
-
-  if [ $? -ne 0 ]; then
-    echo "Error: Failed to create droplet. Output:"
-    echo "$create_output"
-    exit 1
-  fi
+    --tag-names "$ALL_TAGS"
 
   echo "Droplet '$DROPLET_NAME' created successfully with tags: $ALL_TAGS."
+}
+
+# DigitalOcean provider logic
+pro_digitalocean() {
+  local COMMAND="$1"
+  shift || true
+
+  case "$COMMAND" in
+    create) digitalocean_create "$@" ;;
+    list) digitalocean_list ;;
+    ssh) digitalocean_ssh ;;
+    destroy) digitalocean_destroy ;;
+    *) echo "Unknown command: $COMMAND"; usage; exit 1 ;;
+  esac
 }
 
 # Placeholder for AWS provider

@@ -20,8 +20,9 @@
 
     - name: Install Bun JavaScript runtime
       ansible.builtin.shell: |
+        export HOME=/root
         curl -fsSL https://bun.sh/install | bash
-        echo 'export PATH="$HOME/.bun/bin:$PATH"' >> /root/.bashrc
+        echo 'export PATH="/root/.bun/bin:$PATH"' >> /root/.bashrc
         source /root/.bashrc
         which bun
         bun --version
