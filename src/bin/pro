@@ -63,14 +63,18 @@ generate_cloud_init() {
   local playbook_path="$3"
 
   cat <<EOF
-#cloud-init
+#cloud-config
 packages:
-  - epel-release
-  - ansible
   - git
+  - python3-pip
 
 runcmd:
+  - echo "Updating system packages..."
+  - dnf install -y python3-pip
+  - pip3 install --upgrade pip ansible
+  - echo "Cloning repository..."
   - git clone -b $branch $repo_url /opt/ansible || (cd /opt/ansible && git pull)
+  - echo "Running playbook..."
   - cd /opt/ansible/$playbook_path
   - ansible-playbook -i "localhost," -c local playbook.yml
 EOF
