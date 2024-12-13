@@ -63,9 +63,7 @@ generate_cloud_init() {
   local playbook_path="$3"
 
   cat <<EOF
-#cloud-config
-package_update: true
-package_upgrade: true
+#cloud-init
 packages:
   - epel-release
   - ansible

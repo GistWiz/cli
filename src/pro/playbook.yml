@@ -2,13 +2,8 @@
 - name: Provision DigitalOcean Droplet Environment
   hosts: localhost
   connection: local
-  become: true
+  become: yes
   tasks:
-    - name: Update and upgrade packages
-      ansible.builtin.apt:
-        update_cache: yes
-        upgrade: dist
-
     - name: Ensure required packages are installed
       ansible.builtin.package:
         name:
@@ -64,6 +59,7 @@
 
           [Install]
           WantedBy=multi-user.target
+
     - name: Reload systemd and start the application service
       ansible.builtin.systemd:
         name: application.service
