@@ -48,7 +48,7 @@ cleanup_gistwiz() {
   echo "Cleaning up Gistwiz..."
   systemctl stop gistwiz || true
   systemctl disable gistwiz || true
-  rm -rf /etc/systemd/system/gistwiz.service
+  rm -rf /etc/systemd/system/gistwiz*
   rm -rf "${PREFIX}/gistwiz"
   rm -rf /var/log/gistwiz
 }
@@ -205,9 +205,12 @@ install_bun() {
 
 setup_gistwiz_environment() {
   echo "Setting up Gistwiz Environment Variables..."
-  cat >/etc/profile.d/sh.local <<EOF
-QUEUE_NAME_GISTS=gists
-EOF
+  echo "QUEUE_NAME_GISTS=gists" >> /etc/environment
+}
+
+cleanup_gistwiz_environment() {
+  echo "Cleaning up Gistwiz Environment Variables..."
+  sed -i '/^QUEUE_NAME_GISTS=/d' /etc/environment
 }
 
 setup_gistwiz_server() {
@@ -272,6 +275,7 @@ EOF
 echo "Starting cleanup..."
 cleanup_redis_stack
 cleanup_redis_file_monitor
+cleanup_gistwiz_environment
 cleanup_gistwiz
 cleanup_bun
 

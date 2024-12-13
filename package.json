@@ -1,6 +1,6 @@
 {
   "name": "gistwiz",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "module": "./src/cli.ts",
   "bin": {
@@ -23,7 +23,7 @@
   "scripts": {
     "gistwiz": "bun run src/cli.ts",
     "monitor": "./src/bin/redis-file-monitor.sh",
-    "pro": "./src/bin/pro.sh"
+    "pro": "export $(grep -v '^#' .env | xargs) && ./src/bin/pro digitalocean --repo GistWiz/cli --name 'GistWizQuickSearch' --tags 'GistWiz,QuickSearch'"
   },
   "trustedDependencies": [
     "core-js"
