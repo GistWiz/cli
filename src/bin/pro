@@ -8,8 +8,8 @@
 #
 # Subcommands:
 #   digitalocean  Manage DigitalOcean droplets (default)
-#   aws           Provision an AWS EC2 instance (future)
-#   azure         Provision an Azure VM (future)
+#   aws           Manage AWS EC2 instances (future)
+#   azure         Manage Azure VMs (future)
 #
 ################################################################################
 
@@ -33,12 +33,12 @@ Usage:
 
 Subcommands:
   digitalocean  Manage DigitalOcean droplets
-    - create    Create a new droplet
-    - list      List existing droplets
-    - ssh       SSH into a droplet
-    - destroy   Destroy a droplet
-  aws           Provision an AWS EC2 instance (future)
-  azure         Provision an Azure VM (future)
+    create      Create a new droplet
+    list        List existing droplets
+    ssh         SSH into a selected droplet
+    destroy     Destroy a selected droplet
+  aws           Manage AWS EC2 instances (future)
+  azure         Manage Azure VMs (future)
 
 Examples:
   $0 digitalocean create --repo GistWiz/cli --name QuickSearch --tags custom-tag1,custom-tag2
@@ -92,6 +92,7 @@ process_tags() {
   local provider_tag="$1"
   local cli_tags="$2"
 
+  # Combine default tags with provider-specific and CLI-provided tags
   local combined_tags="$DEFAULT_TAGS"
   if [ -n "$provider_tag" ]; then
     combined_tags="$combined_tags,$provider_tag"
@@ -101,6 +102,64 @@ process_tags() {
   fi
 
   echo "$combined_tags"
+}
+
+# DigitalOcean create logic
+digitalocean_create() {
+  local REPO=""
+  local TAGS=""
+  while [ "$#" -gt 0 ]; do
+    case $1 in
+      -r|--repo) REPO="$2"; shift ;;
+      -b|--branch) BRANCH="$2"; shift ;;
+      -p|--playbook-path) PLAYBOOK_PATH="$2"; shift ;;
+      -n|--name) DROPLET_NAME="$2"; shift ;;
+      -R|--region) REGION="$2"; shift ;;
+      -s|--size) SIZE="$2"; shift ;;
+      -k|--private-key) PRIVATE_KEY="$2"; shift ;;
+      --tags) TAGS="$2"; shift ;;
+      -h|--help) usage; exit 0 ;;
+      *) echo "Unknown option: $1"; usage; exit 1 ;;
+    esac
+    shift
+  done
+
+  REPO_URL=$(validate_and_get_repo_url "$REPO")
+  BRANCH="${BRANCH-$DEFAULT_BRANCH}"
+  PLAYBOOK_PATH="${PLAYBOOK_PATH-$DEFAULT_PLAYBOOK_PATH}"
+  DROPLET_NAME="${DROPLET_NAME-$DEFAULT_DROPLET_NAME}"
+  DROPLET_IMAGE="${DROPLET_IMAGE-$DEFAULT_DROPLET_IMAGE}"
+  REGION="${REGION-$DEFAULT_REGION}"
+  SIZE="${SIZE-$DEFAULT_SIZE}"
+  PRIVATE_KEY="${PRIVATE_KEY-$DEFAULT_PRIVATE_KEY}"
+
+  if [ ! -f "$PRIVATE_KEY" ]; then
+    echo "Error: Private key file '$PRIVATE_KEY' not found."
+    exit 1
+  fi
+
+  # Process tags
+  ALL_TAGS=$(process_tags "digitalocean" "$TAGS")
+
+  echo "Generating Cloud Init script for DigitalOcean..."
+  cloud_init=$(generate_cloud_init "$REPO_URL" "$BRANCH" "$PLAYBOOK_PATH")
+
+  echo "Creating DigitalOcean droplet '$DROPLET_NAME' in region '$REGION' with tags: $ALL_TAGS..."
+  create_output=$(doctl compute droplet create "$DROPLET_NAME" \
+    --region "$REGION" \
+    --image "$DROPLET_IMAGE" \
+    --size "$SIZE" \
+    --ssh-keys $(doctl compute ssh-key list --format ID --no-header | tr '\n' ',') \
+    --user-data "$cloud_init" \
+    --tag-names "$ALL_TAGS" 2>&1)
+
+  if [ $? -ne 0 ]; then
+    echo "Error: Failed to create droplet. Output:"
+    echo "$create_output"
+    exit 1
+  fi
+
+  echo "Droplet '$DROPLET_NAME' created successfully with tags: $ALL_TAGS."
 }
 
 # DigitalOcean list logic
@@ -117,7 +176,7 @@ digitalocean_ssh() {
 
   if [ -z "$droplets" ]; then
     echo "No droplets with the 'pro' tag found."
-    exit 1
+    return 0
   fi
 
   local selected
@@ -125,7 +184,7 @@ digitalocean_ssh() {
 
   if [ -z "$selected" ]; then
     echo "No droplet selected."
-    exit 1
+    return 0
   fi
 
   local public_ipv4
@@ -135,15 +194,15 @@ digitalocean_ssh() {
   ssh -t -i "$DEFAULT_PRIVATE_KEY" root@"$public_ipv4"
 }
 
-# DigitalOcean Destroy logic
+# DigitalOcean destroy logic
 digitalocean_destroy() {
   echo "Fetching droplets with 'pro' tag for destruction..."
   local droplets
-  droplets=$(doctl compute droplet list --tag-name pro --format ID,Name,PublicIPv4,Memory,Region,Tags --no-header)
+  droplets=$(doctl compute droplet list --tag-name pro --format ID,Name,PublicIPv4 --no-header)
 
   if [ -z "$droplets" ]; then
     echo "No droplets with the 'pro' tag found."
-    exit 1
+    return 0
   fi
 
   local selected
@@ -151,7 +210,7 @@ digitalocean_destroy() {
 
   if [ -z "$selected" ]; then
     echo "No droplet selected."
-    exit 1
+    return 0
   fi
 
   local droplet_id
@@ -159,76 +218,21 @@ digitalocean_destroy() {
 
   echo "Destroying droplet with ID $droplet_id..."
   doctl compute droplet delete "$droplet_id" --force
-
   echo "Droplet $droplet_id destroyed successfully."
-}
-
-# DigitalOcean Create logic (default)
-digitalocean_create() {
-  local REPO="$1"
-  local TAGS="$2"
-
-  if [ -z "$REPO" ]; then
-    echo "Error: --repo is required for the create command."
-    exit 1
-  fi
-
-  REPO_URL=$(validate_and_get_repo_url "$REPO")
-
-  BRANCH="${BRANCH-$DEFAULT_BRANCH}"
-  PLAYBOOK_PATH="${PLAYBOOK_PATH-$DEFAULT_PLAYBOOK_PATH}"
-  DROPLET_NAME="${DROPLET_NAME-$DEFAULT_DROPLET_NAME}"
-  DROPLET_IMAGE="${DROPLET_IMAGE-$DEFAULT_DROPLET_IMAGE}"
-  REGION="${REGION-$DEFAULT_REGION}"
-  SIZE="${SIZE-$DEFAULT_SIZE}"
-  PRIVATE_KEY="${PRIVATE_KEY-$DEFAULT_PRIVATE_KEY}"
-
-  if [ ! -f "$PRIVATE_KEY" ]; then
-    echo "Error: Private key file '$PRIVATE_KEY' not found."
-    exit 1
-  fi
-
-  ALL_TAGS=$(process_tags "digitalocean" "$TAGS")
-
-  echo "Generating Cloud Init script for DigitalOcean..."
-  cloud_init=$(generate_cloud_init "$REPO_URL" "$BRANCH" "$PLAYBOOK_PATH")
-
-  echo "Creating DigitalOcean droplet '$DROPLET_NAME' in region '$REGION' with tags: $ALL_TAGS..."
-  doctl compute droplet create "$DROPLET_NAME" \
-    --region "$REGION" \
-    --image "$DROPLET_IMAGE" \
-    --size "$SIZE" \
-    --ssh-keys $(doctl compute ssh-key list --format ID --no-header | tr '\n' ',') \
-    --user-data "$cloud_init" \
-    --tag-names "$ALL_TAGS"
-
-  echo "Droplet '$DROPLET_NAME' created successfully with tags: $ALL_TAGS."
 }
 
 # DigitalOcean provider logic
 pro_digitalocean() {
-  local COMMAND="$1"
-  shift || true
+  local COMMAND="$1"; shift || true
 
   case "$COMMAND" in
     create) digitalocean_create "$@" ;;
     list) digitalocean_list ;;
     ssh) digitalocean_ssh ;;
     destroy) digitalocean_destroy ;;
+    -h|--help) usage; exit 0 ;;
     *) echo "Unknown command: $COMMAND"; usage; exit 1 ;;
   esac
-}
-
-# Placeholder for AWS provider
-pro_aws() {
-  echo "AWS provider support is not implemented yet."
-  exit 1
-}
-
-# Placeholder for Azure provider
-pro_azure() {
-  echo "Azure provider support is not implemented yet."
-  exit 1
 }
 
 # Main function
@@ -238,8 +242,8 @@ main() {
 
   case "$subcommand" in
     digitalocean) pro_digitalocean "$@" ;;
-    aws) pro_aws "$@" ;;
-    azure) pro_azure "$@" ;;
+    aws) echo "AWS support is not implemented yet."; exit 1 ;;
+    azure) echo "Azure support is not implemented yet."; exit 1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown subcommand: $subcommand"; usage; exit 1 ;;
   esac
