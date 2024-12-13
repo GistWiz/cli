@@ -13,7 +13,9 @@
         name:
           - git
           - curl
+          - tree
           - unzip
+          - vim
         state: present
 
     - name: Install Bun JavaScript runtime
@@ -52,6 +54,11 @@
       args:
         executable: /bin/bash
 
+    - name: Setup GistWiz Environment Variables
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: "QUEUE_NAME_GISTS=gists"
+
     - name: Create a systemd service for the application
       ansible.builtin.copy:
         dest: /etc/systemd/system/gistwiz.service
@@ -65,7 +72,7 @@
           WorkingDirectory=/opt/gistwiz
           Restart=always
           User=root
-          Environment="PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          EnvironmentFile=/etc/environment
 
           [Install]
           WantedBy=multi-user.target
@@ -83,7 +90,7 @@
           WorkingDirectory=/opt/gistwiz
           Restart=always
           User=root
-          Environment="PATH=/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          EnvironmentFile=/etc/environment
 
           [Install]
           WantedBy=multi-user.target
