@@ -24,7 +24,8 @@
     "gistwiz": "bun run src/cli.ts",
     "monitor": "./src/bin/redis-file-monitor.sh",
     "pro": "export $(grep -v '^#' .env | xargs) && ./src/bin/pro digitalocean create --repo GistWiz/cli --name 'GistWizQuickSearch' --tags 'GistWiz,QuickSearch'",
-    "ssh": "export $(grep -v '^#' .env | xargs) && ./src/bin/pro digitalocean ssh"
+    "ssh": "export $(grep -v '^#' .env | xargs) && ./src/bin/pro digitalocean ssh",
+    "destroy": "export $(grep -v '^#' .env | xargs) && ./src/bin/pro digitalocean destroy"
   },
   "trustedDependencies": [
     "core-js"
