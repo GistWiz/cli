@@ -32,7 +32,7 @@
 
     - name: Extract Redis Stack Server
       unarchive:
-        src: /tmp/redis-stack-server.tar.gz
+        src: /tmp/redis.gz
         dest: /opt/redis
         remote_src: yes
         extra_opts:
@@ -47,7 +47,7 @@
 
     - name: Configure Redis Stack service
       copy:
-        dest: /etc/systemd/system/redis-stack.service
+        dest: /etc/systemd/system/redis.service
         content: |
           [Unit]
           Description=Redis Stack Server
