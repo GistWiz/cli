@@ -18,7 +18,7 @@
           - vim
         state: present
 
-    - name: Download Redis Stack Server
+    - name: Download Redis Stack Server (https://download.redis.io/releases)
       get_url:
         url: "https://packages.redis.io/redis-stack/redis-stack-server-7.4.0-v1.rhel9.x86_64.tar.gz"
         dest: /tmp/redis-stack-server.tar.gz
