@@ -18,6 +18,61 @@
           - vim
         state: present
 
+    - name: Download Redis Stack Server
+      get_url:
+        url: "https://packages.redis.io/redis-stack/redis-stack-server-7.4.0-v1.rhel9.x86_64.tar.gz"
+        dest: /tmp/redis-stack-server.tar.gz
+        mode: '0644'
+
+    - name: Create destination directory for Redis Stack
+      file:
+        path: /opt/redis
+        state: directory
+        mode: '0755'
+
+    - name: Extract Redis Stack Server
+      unarchive:
+        src: /tmp/redis-stack-server.tar.gz
+        dest: /opt/redis
+        remote_src: yes
+        extra_opts:
+          - --strip-components=2
+
+    - name: Ensure /opt/redis/bin is in PATH for root user
+      lineinfile:
+        path: /root/.bashrc
+        line: 'export PATH=$PATH:/opt/redis/bin'
+        create: yes
+        state: present
+
+    - name: Configure Redis Stack service
+      copy:
+        dest: /etc/systemd/system/redis-stack.service
+        content: |
+          [Unit]
+          Description=Redis Stack Server
+          After=network.target
+
+          [Service]
+          ExecStart=/opt/redis/bin/redis-stack-server /opt/redis/etc/redis.conf
+          Restart=always
+          User=root
+          Environment="PATH=/opt/redis/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Reload systemd to apply new service
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start Redis Stack service
+      systemd:
+        name: redis-stack.service
+        enabled: true
+        state: started
+
     - name: Install Bun JavaScript runtime
       ansible.builtin.shell: |
         export HOME=/root
