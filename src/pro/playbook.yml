@@ -63,15 +63,87 @@
           WantedBy=multi-user.target
         mode: '0644'
 
+    - name: Secure Redis configuration to bind only to localhost
+      ansible.builtin.lineinfile:
+        path: /opt/redis/etc/redis.conf
+        regexp: '^#?bind .*'
+        line: 'bind 127.0.0.1 ::1'
+        state: present
+        create: yes
+
     - name: Reload systemd to apply new service
       systemd:
         daemon_reload: yes
 
-    - name: Enable and start Redis Stack service
-      systemd:
+    - name: Ensure Redis configuration ensures data persistence
+      ansible.builtin.blockinfile:
+        path: /opt/redis/etc/redis.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK: Redis Data Persistence Configuration"
+        block: |
+          # -----------------------------------------
+          # Enable RDB Snapshots (Recommended for Backups)
+          # -----------------------------------------
+
+          # Save the dataset every 5 minutes if at least 1 key has changed
+          save 300 1
+
+          # Save the dataset every 60 seconds if at least 100 keys have changed
+          save 60 100
+
+          # Save the dataset every 15 seconds if at least 10,000 keys have changed
+          save 15 10000
+
+          # Specify the location for the RDB file
+          dbfilename dump.rdb
+          dir /var/lib/redis
+
+          # -----------------------------------------
+          # Enable AOF Persistence (Recommended for Durability)
+          # -----------------------------------------
+
+          # Use Append-Only File persistence for more durability
+          appendonly yes
+
+          # Specify the name of the AOF file
+          appendfilename "appendonly.aof"
+
+          # Fsync policy for AOF:
+          # always: Every write is synced to disk (slow but safest)
+          # everysec: Fsync every second (default; good balance of safety and performance)
+          # no: Let the OS handle syncing (fastest but can lose data)
+          appendfsync everysec
+
+          # Avoid rewriting the AOF file too frequently
+          no-appendfsync-on-rewrite yes
+
+          # Reduce AOF file size by rewriting it in the background
+          auto-aof-rewrite-percentage 100
+          auto-aof-rewrite-min-size 64mb
+
+          # -----------------------------------------
+          # General Configuration for Consistency
+          # -----------------------------------------
+
+          # Stop writing if there are RDB/AOF errors (prevents data corruption)
+          stop-writes-on-bgsave-error yes
+
+          # Enable Redis to act as a durable and crash-safe database
+          rdbchecksum yes
+
+    - name: Enable & restart Redis Stack service
+      ansible.builtin.systemd:
         name: redis-stack.service
         enabled: true
-        state: started
+        state: restarted
+
+    - name: Apply UFW rules to restrict Redis access (optional)
+      ansible.builtin.shell: |
+        sudo ufw allow from 127.0.0.1 to any port 6379
+        sudo ufw deny 6379
+      args:
+        executable: /bin/bash
+      register: ufw_rules_output
+      changed_when: "'Skipping' not in ufw_rules_output.stdout"
 
     - name: Install Bun JavaScript runtime
       ansible.builtin.shell: |
