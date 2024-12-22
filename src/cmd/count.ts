@@ -2,7 +2,7 @@ import Redis from "ioredis"
 
 const redis = new Redis()
 
-export async function count(username: string, count: string): Promise<void> {
+export async function count(username: string, count: string, updated: string): Promise<void> {
   if (!username || !count) {
     console.error("Error: Both username and count are required.")
     process.exit(1)
@@ -10,7 +10,7 @@ export async function count(username: string, count: string): Promise<void> {
 
   try {
     await redis.call("SET", `gistwiz:gists:${username}:count`, count)
-    await redis.call("SET", `gistwiz:gists:${username}:updated`, new Date().toISOString())
+    await redis.call("SET", `gistwiz:gists:${username}:updated`, updated)
   } catch (error: any) {
     console.error(`Error: ${error.message}`)
     process.exit(1)

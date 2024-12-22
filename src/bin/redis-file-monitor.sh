@@ -6,6 +6,7 @@ DEFAULT_LOG_FILE="${DEFAULT_LOG_DIR}/redis-file-monitor.log"
 LOG_FILE="${LOG_FILE:-/var/log/redis-file-monitor.log}"
 DRY_RUN=false
 RUNNING=true
+REDIS_CLI="${REDIS_CLI:-redis-cli}"
 
 # Add Redis CLI to PATH
 export PATH="/opt/redis-stack/bin:$PATH"
@@ -87,12 +88,12 @@ if [[ "$DRY_RUN" == "true" ]]; then
   echo "  Required tool: $REQUIRED_TOOL"
   echo "  Watch directory: $WATCH_DIR"
   echo "  Log file: $LOG_FILE"
-  echo "  Redis CLI PATH: $(command -v redis-cli || echo 'Not found')"
+  # echo "  Redis CLI PATH: $(command -v redis-cli || echo 'Not found')"
   exit 0
 fi
 
 # Start monitoring
-echo "$(date): Starting Redis file monitor in ${WATCH_DIR} using ${REQUIRED_TOOL}..." | tee -a "$LOG_FILE"
+echo "$(date): Starting Redis file monitor in ${WATCH_DIR} with ${REQUIRED_TOOL} using ${REDIS_CLI}" | tee -a "$LOG_FILE"
 
 if [[ "$REQUIRED_TOOL" == "inotifywait" ]]; then
   inotifywait -m -e close_write --format '%w%f' "${WATCH_DIR}" | while read -r file; do
@@ -102,7 +103,7 @@ if [[ "$REQUIRED_TOOL" == "inotifywait" ]]; then
         sleep 1
       done
       echo "$(date): Processing file: ${file}" | tee -a "$LOG_FILE"
-      if cat "${file}" | redis-cli; then
+      if cat "${file}" | ${REDIS_CLI}; then
         echo "$(date): Successfully processed ${file}" | tee -a "$LOG_FILE"
       else
         echo "$(date): Failed to process ${file}" | tee -a "$LOG_FILE"
@@ -118,7 +119,7 @@ elif [[ "$REQUIRED_TOOL" == "fswatch" ]]; then
         sleep 1
       done
       echo "$(date): Processing file: ${file}" | tee -a "$LOG_FILE"
-      if cat "${file}" | redis-cli; then
+      if cat "${file}" | ${REDIS_CLI}; then
         echo "$(date): Successfully processed ${file}" | tee -a "$LOG_FILE"
       else
         echo "$(date): Failed to process ${file}" | tee -a "$LOG_FILE"

@@ -4,7 +4,7 @@ import { GistWizOctokit } from '../lib/octokit/plugin/gistwiz-octokit'
 
 const LOG_DIR = '/var/log/gistwiz'
 
-export async function gists({ token }: { token: string }): Promise<void> {
+export async function gists({ token }: { token: string }): Promise<{ username: string, count: number, updated: string, elapsed: string }> {
   let jsonl = true
   let redisearch = true
 
@@ -144,19 +144,26 @@ export async function gists({ token }: { token: string }): Promise<void> {
     await Promise.all(fileClosePromises)
 
     console.log(`\nProcessed ${processedCount} gists out of ${totalGists} available.`)
-    console.log(`\nElapsed time: ${((Date.now() - startTime) / 1000).toFixed(2)} seconds`)
+    let elapsed = ((Date.now() - startTime) / 1000).toFixed(2)
+    console.log(`\nElapsed time: ${elapsed} seconds`)
 
     fs.writeFileSync(
       USER_RUN_FILE,
-      JSON.stringify({ etag: currentEtag }, null, 2)
-    );
+      JSON.stringify({ etag: currentEtag, count: processedCount, updated: new Date().toISOString(), elapsed }, null, 2)
+    )
+
     if (fs.existsSync(USER_RUN_FILE)) {
       console.log(`Cache file saved to: ${USER_RUN_FILE}`)
     } else {
       console.error(`Failed to save cache file to: ${USER_RUN_FILE}`)
     }
 
-    process.exit(0)
+    return {
+      username,
+      count: totalGists,
+      updated: new Date().toISOString(),
+      elapsed,
+    }
   } catch (error: any) {
     console.error(`Error during fetch: ${error.message}`)
     process.exit(1)
