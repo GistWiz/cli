@@ -2,6 +2,7 @@
 
 import { Command } from 'commander'
 
+import { count } from './cmd/count'
 import { gists } from './cmd/gists'
 import { query } from './cmd/query'
 import { queue } from './cmd/queue'
@@ -62,6 +63,22 @@ program
       await query(username, text) // Let the function handle output
     } catch (error: any) {
       console.error(`Error executing query: ${error.message}`)
+      process.exit(1)
+    }
+  })
+
+program
+  .command("count")
+  .description("Records Count of Indexed Gists")
+  .requiredOption("--username <username>", "GitHub Username")
+  .argument("<number>", "Count")
+  .action(async (__count, options) => {
+    const { username } = options
+
+    try {
+      await count(username, __count)
+    } catch (error: any) {
+      console.error(`Error: ${error.message}`)
       process.exit(1)
     }
   })
