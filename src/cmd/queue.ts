@@ -19,19 +19,16 @@ export async function queue({ token }: { token: string }): Promise<void> {
   try {
     queue = new Queue(QUEUE_NAME, { connection: { url: REDIS_URL } })
 
-    const scheduledJob = await queue.upsertJobScheduler(`${QUEUE_NAME}-${username}`,
+    const job = await queue.add(
+      QUEUE_NAME,
+      { token },
       {
-        every: ms('10m'),
-        immediately: true,
+        delay: ms('1s'),
+        jobId: username,
       },
-      {
-        name: `${QUEUE_NAME}-${username}`,
-        data: { token },
-        opts: {}
-      }
     )
 
-    console.debug(`Job scheduled successfully for ${username} with ID: ${scheduledJob.id}`)
+    console.debug(`Job "${job.id}" scheduled successfully`)
     process.exit(0)
   } catch (error: any) {
     console.error(`Error while scheduling job for ${username}: ${error.message}`)

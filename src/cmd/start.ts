@@ -36,5 +36,6 @@ export async function worker(): Promise<void> {
   gistWorker.on('error', (err: any) => console.error(`Worker encountered an error: ${err.message}`))
 
   gistWorker.on('failed', (job: any, err: any) => console.error(`Job ID ${job.id} failed with error: ${err.message}`))
+
   console.log(`Worker is listening for jobs on queue: ${QUEUE_NAME}`)
 }

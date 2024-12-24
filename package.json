@@ -27,7 +27,10 @@
     "pro": "bunx @wilmoore/pro digitalocean create --repo GistWiz/cli --name 'GistWizQuickSearch' --tags 'GistWiz,QuickSearch'",
     "droplets": "bunx @wilmoore/pro digitalocean list",
     "ssh": "bunx @wilmoore/pro digitalocean ssh",
-    "destroy": "bunx @wilmoore/pro digitalocean destroy"
+    "destroy": "bunx @wilmoore/pro digitalocean destroy",
+    "start": "bunx pm2 start ecosystem.config.json",
+    "monit": "bunx pm2 monit",
+    "clean": "redis-cli FLUSHALL && bunx pm2 delete all && rm -rf /var/log/gistwiz/*.json"
   },
   "trustedDependencies": [
     "core-js"

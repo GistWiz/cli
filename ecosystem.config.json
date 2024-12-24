@@ -1,0 +1,17 @@
+{
+  "apps": [
+    {
+      "name": "worker",
+      "namespace": "default",
+      "script": "bun",
+      "args": ["src/cli.ts", "worker"],
+      "restart_count": 1166,
+      "instances": 1,
+      "exec_mode": "fork",
+      "watch": true,
+      "env": {
+        "NODE_ENV": "production" // Add or modify environment variables here
+      }
+    }
+  ]
+}

@@ -76,7 +76,7 @@ program
     const { username } = options
 
     try {
-      await count(username, __count)
+      await count(username, __count, new Date().toISOString())
     } catch (error: any) {
       console.error(`Error: ${error.message}`)
       process.exit(1)
