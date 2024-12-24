@@ -5,8 +5,8 @@ import { Worker } from 'bullmq'
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379'
 const QUEUE_NAME = process.env.QUEUE_NAME_GISTS || ''
 
-export async function worker(): Promise<void> {
-  const gistWorker = new Worker(
+export const worker = async (): Promise<void> => {
+  const worker = new Worker(
     QUEUE_NAME,
     async (job: any) => {
       try {
@@ -28,14 +28,14 @@ export async function worker(): Promise<void> {
     }
   )
 
-  gistWorker.on('completed', async (job: any) => {
+  worker.on('completed', async (job: any) => {
     await count(job.data.username, job.data.count, job.data.updated)
     console.log(`Job ID ${job.id} has been completed.`, { count: job.data.count })
   })
 
-  gistWorker.on('error', (err: any) => console.error(`Worker encountered an error: ${err.message}`))
+  worker.on('error', (err: any) => console.error(`Worker encountered an error: ${err.message}`))
 
-  gistWorker.on('failed', (job: any, err: any) => console.error(`Job ID ${job.id} failed with error: ${err.message}`))
+  worker.on('failed', (job: any, err: any) => console.error(`Job ID ${job.id} failed with error: ${err.message}`))
 
   console.log(`Worker is listening for jobs on queue: ${QUEUE_NAME}`)
 }

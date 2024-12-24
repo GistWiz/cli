@@ -30,7 +30,8 @@
     "destroy": "bunx @wilmoore/pro digitalocean destroy",
     "start": "bunx pm2 start ecosystem.config.json",
     "monit": "bunx pm2 monit",
-    "clean": "redis-cli FLUSHALL && bunx pm2 delete all && rm -rf /var/log/gistwiz/*.json"
+    "clean": "redis-cli FLUSHALL && bunx pm2 delete all && rm -rf /var/log/gistwiz/*.json",
+    "restart": "bun clean && bun start && bun monit"
   },
   "trustedDependencies": [
     "core-js"

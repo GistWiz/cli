@@ -41,13 +41,13 @@ export async function gists({ token }: { token: string }): Promise<{ username: s
 
   console.log(`\nAuthenticated as: ${username}`)
 
-  let totalGists;
+  let count = 0
+
   try {
-    totalGists = await octokit.count()
-    console.log(`Total gists available: ${totalGists}`)
+    count = await octokit.count()
+    console.debug(`Gists Count: ${count}`)
   } catch (error: any) {
-    console.error(`Error calculating total gists: ${error.message}`)
-    process.exit(1)
+    console.debug(`Unable to complete calculating total gists: ${error.message}`)
   }
 
   console.log(`\nPrevious ETag: ${previousEtag || "None"}`)
@@ -56,7 +56,7 @@ export async function gists({ token }: { token: string }): Promise<{ username: s
   try {
     const response = await octokit.request("GET /gists", { per_page: 1 })
     currentEtag = response.headers.etag
-    console.log(`Current ETag:  ${currentEtag}`)
+    console.log(`Current ETag: ${currentEtag}`)
   } catch (error: any) {
     console.error(`Error fetching initial ETag: ${error.message}`)
     process.exit(1)
@@ -67,7 +67,7 @@ export async function gists({ token }: { token: string }): Promise<{ username: s
     process.exit(1)
   }
 
-  console.error("\nCache Missed\n")
+  console.debug("\nCache Missed\n")
   console.log("Starting fetch...")
 
   let processedCount = 0
@@ -143,7 +143,7 @@ export async function gists({ token }: { token: string }): Promise<{ username: s
 
     await Promise.all(fileClosePromises)
 
-    console.log(`\nProcessed ${processedCount} gists out of ${totalGists} available.`)
+    console.log(`\nProcessed ${processedCount} gists out of ${count} available.`)
     let elapsed = ((Date.now() - startTime) / 1000).toFixed(2)
     console.log(`\nElapsed time: ${elapsed} seconds`)
 
@@ -159,10 +159,10 @@ export async function gists({ token }: { token: string }): Promise<{ username: s
     }
 
     return {
-      username,
-      count: totalGists,
-      updated: new Date().toISOString(),
+      count,
       elapsed,
+      updated: new Date().toISOString(),
+      username,
     }
   } catch (error: any) {
     console.error(`Error during fetch: ${error.message}`)

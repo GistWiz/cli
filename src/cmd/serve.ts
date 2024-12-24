@@ -1,6 +1,6 @@
+import Redis from 'ioredis'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { URL } from 'url'
-import Redis from 'ioredis'
 import { format } from '../lib/redis'
 import { GistWizOctokit } from '../lib/octokit/plugin/gistwiz-octokit'
 
