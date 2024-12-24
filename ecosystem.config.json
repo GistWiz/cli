@@ -2,16 +2,31 @@
   "apps": [
     {
       "name": "worker",
-      "namespace": "default",
-      "script": "bun",
-      "args": ["src/cli.ts", "worker"],
-      "restart_count": 1166,
+      "script": "src/cli.ts",
+      "instances": 2,
+      "exec_mode": "fork",
+      "autorestart": true,
+      "watch": true,
+      "interpreter": "bun",
+      "args": ["worker"]
+    },
+    {
+      "name": "monitor",
+      "script": "bunx redis-file-monitor",
       "instances": 1,
       "exec_mode": "fork",
+      "autorestart": true,
+      "watch": false
+    },
+    {
+      "name": "serve",
+      "script": "src/cli.ts",
+      "instances": 1,
+      "exec_mode": "fork",
+      "autorestart": true,
       "watch": true,
-      "env": {
-        "NODE_ENV": "production" // Add or modify environment variables here
-      }
+      "interpreter": "bun",
+      "args": ["serve"]
     }
   ]
 }
