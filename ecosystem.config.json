@@ -3,7 +3,7 @@
     {
       "name": "worker",
       "script": "src/cli.ts",
-      "instances": 2,
+      "instances": 1,
       "exec_mode": "fork",
       "autorestart": true,
       "watch": true,
